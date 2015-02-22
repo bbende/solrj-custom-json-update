@@ -41,6 +41,23 @@ public class IndexJSONTest {
             "      ]\n" +
             "}";
 
+    // Example JSON to use as input
+    static final String EXAMPLE_JSON2 = "{\n" +
+            "  \"first\": \"Bob\",\n" +
+            "  \"last\": \"Smith\",\n" +
+            "  \"grade\": 8,\n" +
+            "  \"exams\": [\n" +
+            "      {\n" +
+            "        \"subject\": \"Maths\",\n" +
+            "        \"test\"   : \"term1\",\n" +
+            "        \"marks\":90},\n" +
+            "        {\n" +
+            "         \"subject\": \"Biology\",\n" +
+            "         \"test\"   : \"term1\",\n" +
+            "         \"marks\":86}\n" +
+            "      ]\n" +
+            "}";
+
 
     // Expected SolrDocuments to be produced from JSON
     static final Collection<SolrDocument> EXPECTED_SOLR_DOCS;
@@ -66,6 +83,32 @@ public class IndexJSONTest {
         solrDocuments.add(doc1);
         solrDocuments.add(doc2);
         EXPECTED_SOLR_DOCS = Collections.unmodifiableCollection(solrDocuments);
+    }
+
+    // Expected SolrDocuments to be produced from JSON
+    static final Collection<SolrDocument> EXPECTED_SOLR_DOCS2;
+
+    static {
+        SolrDocument doc1 = new SolrDocument();
+        doc1.addField("first", "Bob");
+        doc1.addField("last", "Smith");
+        doc1.addField("grade", 8);
+        doc1.addField("subject", "Maths");
+        doc1.addField("test", "term1");
+        doc1.addField("marks", 90);
+
+        SolrDocument doc2 = new SolrDocument();
+        doc2.addField("first", "Bob");
+        doc2.addField("last", "Smith");
+        doc2.addField("grade", 8);
+        doc2.addField("subject", "Biology");
+        doc2.addField("test", "term1");
+        doc2.addField("marks", 86);
+
+        Collection<SolrDocument> solrDocuments = new ArrayList<>();
+        solrDocuments.add(doc1);
+        solrDocuments.add(doc2);
+        EXPECTED_SOLR_DOCS2 = Collections.unmodifiableCollection(solrDocuments);
     }
 
     private SolrServer solrServer;
@@ -108,6 +151,31 @@ public class IndexJSONTest {
         request.addContentStream(new ContentStreamBase.StringStream(EXAMPLE_JSON));
 
         runUpdateRequestTest(request, EXPECTED_SOLR_DOCS);
+    }
+
+    @Test
+    public void testAddMultipleCustomJsonWithContentStreamUpdateRequest() throws IOException {
+        ContentStreamUpdateRequest request = new ContentStreamUpdateRequest(
+                "/update/json/docs");
+        request.setParam("json.command", "false");
+        request.setParam("split", "/exams");
+        request.getParams().add("f", "first:/first");
+        request.getParams().add("f", "last:/last");
+        request.getParams().add("f", "grade:/grade");
+        request.getParams().add("f", "subject:/exams/subject");
+        request.getParams().add("f", "test:/exams/test");
+        request.getParams().add("f", "marks:/exams/marks");
+
+        // add two streams...
+        request.addContentStream(new ContentStreamBase.StringStream(EXAMPLE_JSON));
+        request.addContentStream(new ContentStreamBase.StringStream(EXAMPLE_JSON2));
+
+        // ensure docs from both streams were added
+        Collection<SolrDocument> solrDocuments = new ArrayList<>();
+        solrDocuments.addAll(EXPECTED_SOLR_DOCS);
+        solrDocuments.addAll(EXPECTED_SOLR_DOCS2);
+
+        runUpdateRequestTest(request, solrDocuments);
     }
 
 
