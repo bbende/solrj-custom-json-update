@@ -10,6 +10,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -50,11 +51,11 @@ public class IndexJSONTest {
             "      {\n" +
             "        \"subject\": \"Maths\",\n" +
             "        \"test\"   : \"term1\",\n" +
-            "        \"marks\":90},\n" +
+            "        \"marks\":91},\n" +
             "        {\n" +
             "         \"subject\": \"Biology\",\n" +
             "         \"test\"   : \"term1\",\n" +
-            "         \"marks\":86}\n" +
+            "         \"marks\":87}\n" +
             "      ]\n" +
             "}";
 
@@ -154,7 +155,7 @@ public class IndexJSONTest {
     }
 
     @Test
-    public void testAddMultipleCustomJsonWithContentStreamUpdateRequest() throws IOException {
+    public void testAddMultipleContentStreamsWithContentStreamUpdateRequest() throws IOException {
         ContentStreamUpdateRequest request = new ContentStreamUpdateRequest(
                 "/update/json/docs");
         request.setParam("json.command", "false");
@@ -171,6 +172,42 @@ public class IndexJSONTest {
         request.addContentStream(new ContentStreamBase.StringStream(EXAMPLE_JSON2));
 
         // ensure docs from both streams were added
+        Collection<SolrDocument> solrDocuments = new ArrayList<>();
+        solrDocuments.addAll(EXPECTED_SOLR_DOCS);
+        solrDocuments.addAll(EXPECTED_SOLR_DOCS2);
+
+        runUpdateRequestTest(request, solrDocuments);
+    }
+
+    /**
+     * Can't figure out if this is supposed to be supported or not, results in the
+     * following error:
+     *
+     * ERROR: multiple values encountered for non multiValued field first: [John, Bob]
+     *
+     * 
+     * @throws IOException
+     */
+    @Test
+    @Ignore
+    public void testAddMultipleJsonDocsWithContentStreamUpdateRequest() throws IOException {
+        ContentStreamUpdateRequest request = new ContentStreamUpdateRequest(
+                "/update/json/docs");
+        request.setParam("json.command", "false");
+        request.setParam("split", "/exams");
+        request.getParams().add("f", "first:/first");
+        request.getParams().add("f", "last:/last");
+        request.getParams().add("f", "grade:/grade");
+        request.getParams().add("f", "subject:/exams/subject");
+        request.getParams().add("f", "test:/exams/test");
+        request.getParams().add("f", "marks:/exams/marks");
+
+        // add one stream with two documents...
+        final String jsonWithTwoDocs = "[" + EXAMPLE_JSON + "," + EXAMPLE_JSON2 + "]";
+        //final String jsonWithTwoDocs = EXAMPLE_JSON + EXAMPLE_JSON2;
+        request.addContentStream(new ContentStreamBase.StringStream(jsonWithTwoDocs));
+
+        // ensure both docs were added
         Collection<SolrDocument> solrDocuments = new ArrayList<>();
         solrDocuments.addAll(EXPECTED_SOLR_DOCS);
         solrDocuments.addAll(EXPECTED_SOLR_DOCS2);
