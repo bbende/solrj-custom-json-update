@@ -1,7 +1,7 @@
 package org.apache.solr;
 
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -10,7 +10,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -112,11 +111,11 @@ public class IndexJSONTest {
         EXPECTED_SOLR_DOCS2 = Collections.unmodifiableCollection(solrDocuments);
     }
 
-    private SolrServer solrServer;
+    private SolrClient solrClient;
 
     @Before
     public void setup() throws IOException {
-        solrServer = EmbeddedSolrServerFactory.create("jsonCollection");
+        solrClient = EmbeddedSolrServerFactory.create("jsonCollection");
     }
 
     @Test
@@ -179,17 +178,7 @@ public class IndexJSONTest {
         runUpdateRequestTest(request, solrDocuments);
     }
 
-    /**
-     * Can't figure out if this is supposed to be supported or not, results in the
-     * following error:
-     *
-     * ERROR: multiple values encountered for non multiValued field first: [John, Bob]
-     *
-     * 
-     * @throws IOException
-     */
     @Test
-    @Ignore
     public void testAddMultipleJsonDocsWithContentStreamUpdateRequest() throws IOException {
         ContentStreamUpdateRequest request = new ContentStreamUpdateRequest(
                 "/update/json/docs");
@@ -219,14 +208,14 @@ public class IndexJSONTest {
     private void runUpdateRequestTest(AbstractUpdateRequest request,
             Collection<SolrDocument> expectedSolrDocuments) {
         try {
-            UpdateResponse response = request.process(solrServer);
+            UpdateResponse response = request.process(solrClient);
             Assert.assertEquals(0, response.getStatus());
 
-            solrServer.commit();
+            solrClient.commit();
 
             // verify number of results
             SolrQuery query = new SolrQuery("*:*");
-            QueryResponse qResponse = solrServer.query(query);
+            QueryResponse qResponse = solrClient.query(query);
             Assert.assertEquals(expectedSolrDocuments.size(), qResponse.getResults().getNumFound());
 
             // verify documents have expected fields and values
@@ -253,7 +242,7 @@ public class IndexJSONTest {
             Assert.fail("Encountered exception: " + e.getMessage());
         } finally {
             try {
-                solrServer.shutdown();
+                solrClient.shutdown();
             } catch (Exception e) {
                 e.printStackTrace();
             }
