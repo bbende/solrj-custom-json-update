@@ -8,6 +8,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -116,6 +117,13 @@ public class IndexJSONTest {
     @Before
     public void setup() throws IOException {
         solrClient = EmbeddedSolrServerFactory.create("jsonCollection");
+    }
+
+    @After
+    public void teardown() throws IOException {
+        if (solrClient != null) {
+            solrClient.close();
+        }
     }
 
     @Test
